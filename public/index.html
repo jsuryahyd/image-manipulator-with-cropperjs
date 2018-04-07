@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Image Editor</title>
+  <link rel="stylesheet" href="css/normalize.css">
+  <!-- <link rel="stylesheet" href="css/skeleton.css">   -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="cropper/cropper.min.css">
+  <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css">
+</head>
+
+<body>
+  <nav id="topNavbar" class="row">
+    <h2 id="logo">ImageCropper</h2>
+    <div > <span id="currentImgName"></span></div>
+    <div id="rightButtons">
+      <!-- <button id="upload" onclick="uploadImg()">Upload</button>
+         -->
+      <label for="imgDialog" id="uploadBtn">Upload
+        <input type="file" name="imgDialog" id="imgDialog" hidden>
+      </label>
+      <button id="saveBtn">Save</button>
+    </div>
+  </nav>
+  <main class="container" id="mainWindow">
+    <aside id="sidebar">
+      <section id="toolbar">
+        <ul id="toolIcons" class="unstyledList flex-col">
+          <li id="cropIcon" onclick="toggleCrop()" class="fa fa-crop"></li>
+          <li id="rotateIcon" class="fa fa-rotate-right"></li>
+          <li></li>
+          <li></li>
+          <li id="addImage"></li>
+          <li id="downloadBtn" class="fa fa-download">
+            <a href="" id="downloadLink" hidden></a>
+          </li>
+        </ul>
+      </section>
+      <section id="savedPreviews" >
+        
+      </section>
+    </aside>
+    <main id="mainArea">
+      <div id="imgWrapper">
+        <img src="" alt="" id="image">
+      </div>
+      <div id="controlsWrapper"></div>
+      <div id="a4Page">
+        
+      </div>
+    </main>
+  </main>
+
+  <script src="/cropper/cropper.min.js"></script>
+  <script src="/js/functions.js"></script>
+  <script>
+    let cropper;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const image = document.getElementById('image');
+      const imageWrapper = document.getElementById('imgWrapper');
+      const imgDialog = document.getElementById('imgDialog');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const rotateIcon = document.getElementById('rotateIcon');
+      const filename = document.getElementById('currentImgName');
+      const downloadLink = document.getElementById('downloadLink');
+      const saveBtn = document.getElementById('saveBtn');
+      const savedPreviews = document.getElementById('savedPreviews')
+      const myControls = controls(image);
+      image.addEventListener('crop',()=>{
+        cropper.getData();
+      })
+      imgDialog.onchange = (event) => {
+        
+        imageWrapper.style.backgroundColor = '';
+        myControls.setImage(event);
+        if(cropper) {
+          //image is being changed
+          newSrc = myControls.setImage(event);
+          console.log(newSrc)
+          if(!newSrc){
+            console.log('cancelled file input');
+            return false
+          }
+          cropper.replace();
+          // cropper = null
+        }else{
+        cropper = new Cropper(image, {
+          scalable: false,
+          rotatable: true,
+          ready: function () {
+            console.log('init and cropping')
+            this.cropper.crop();
+            imageWrapper.style.opacity = 1;  
+            image.addEventListener('crop',()=>{
+            cropper.getData();
+      }) 
+          }
+        });
+      }
+        filename.textContent = imgDialog.files[0].name;
+        download_url = image.getAttribute('src');
+        download_name = 'Uncropped.jpg'
+        downloadLink.setAttribute('download', download_name)
+        downloadLink.setAttribute('href', download_url);
+      };
+      //ends imgDialog.onchange
+      /* starts : downloadBtn onclick*/
+      document.getElementById('downloadBtn').onclick = (event) => {
+        console.log('downloading')
+        if (!image.getAttribute('src')) {
+          event.preventDefault()
+
+          console.log('aborting',event.target)
+        }
+        // else{
+        //   let download_url = cropper.getCroppedCanvas({
+        //       maxHeight: 640,
+        //       maxWidth: 360
+        //     }).toDataURL('image/jpeg');
+        //     //asynchronous function - cannot put after if-else block
+        //     downloadLink.setAttribute('download', 'cropped-640x360.jpg')
+        //     downloadLink.setAttribute('href', download_url);
+        // }
+
+
+        if (cropper && cropper.cropped) {
+          let download_url = cropper.getCroppedCanvas().toDataURL('image/jpeg');
+          //asynchronous function - cannot put after if-else block
+          downloadLink.setAttribute('download', 'cropped-640x360.jpg')
+          downloadLink.setAttribute('href', download_url);
+        } else {
+          downloadLink.setAttribute('download', 'Uncropped.jpg')
+          downloadLink.setAttribute('href', image.getAttribute('src'));
+        }
+        //click event
+        downloadLink.click();
+      }
+      /* ends : downloadBtn onclick*/
+      
+      /* starts :rotateBtn */
+      rotateIcon.onclick =()=>{
+        if(!cropper){
+          console.log('no cropper. cannot rotate');
+          return false;
+
+        }
+        cropper.rotate(45);
+      }
+
+      saveBtn.onclick = ()=>{
+        // appendImg()
+        let url = cropper.getCroppedCanvas().toDataURL('image/jpeg');
+        let img = document.createElement('img');
+        img.src = url;
+        img.setAttribute('data-cropData', JSON.stringify(cropper.getData()))
+        img.setAttribute('class','savedPreviews__img');
+        img.onclick = (event)=>{
+          loadSavedPreview(event)
+        }
+        savedPreviews.appendChild(img)
+      }
+
+    })
+
+    function toggleCrop() {
+      if(!cropper){
+        return false;
+      }
+      let image = document.getElementById('image');
+      let imageWrapper =  document.getElementById('imgWrapper');
+      let download_url, download_name;
+      let downloadBtn = document.getElementById('downloadBtn')
+      if (cropper && cropper.cropped) {
+        console.log('clearing')
+        // cropper.destroy();
+        // cropper = null;
+        cropper.clear()
+        // downloadLink.setAttribute('download', 'Uncropped.jpg')
+        // downloadLink.setAttribute('href', image.getAttribute('src'));
+      } else {
+        console.log('cropping')
+        
+        // cropper = new Cropper(image, {
+        //   scalable: false,
+        //   rotatable: true,
+        //   ready: function () {
+        //     this.cropper.crop();
+        //     imageWrapper.style.opacity = 1;        
+        //     // download_url = this.cropper.getCroppedCanvas({
+        //     //   maxHeight: 640,
+        //     //   maxWidth: 360
+        //     // }).toDataURL('image/jpeg');
+        //     // console.log(download_url)
+        //     // //asynchronous function - cannot put after if-else block
+        //     // downloadLink.setAttribute('download', 'cropped-640x360.jpg')
+        //     // downloadLink.setAttribute('href', download_url);
+        //   }
+        // });
+        cropper.crop();
+      }
+
+    }
+
+
+  function loadSavedPreview(e){
+    console.log(e.target);
+    console.log(JSON.parse(e.target.getAttribute('data-cropData')));
+  }
+
+  </script>
+</body>
+
+</html>

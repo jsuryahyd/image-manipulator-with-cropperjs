@@ -1,0 +1,199 @@
+
+
+nav#topNavbar{
+  background-color: #333;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  height: 50px;
+  align-items: stretch;
+}
+
+
+
+button,label#uploadBtn,#save{
+  background: transparent;
+  border: 1px solid white;
+  color: white;
+  border-radius: 2px;
+  margin-right: 10px;
+  padding: 5px 15px;
+  user-select: none;
+}
+button:focus{
+  outline: none;
+}
+a,a:hover,a:focus,a:visited{
+  text-decoration: none;
+}
+a{
+  /* user-select: none; */
+  /* text-decoration: none;   */
+}
+
+
+
+#topNavbar>*{
+  display: flex;
+  width:30%;
+  padding: 10px 0;
+  justify-content: center;
+  align-items: center;
+  margin: 0
+}
+
+#rightButtons{
+  align-items: stretch
+}
+#rightButtons #uploadBtn{
+  background-color: green;
+  border-color: green;
+  cursor: pointer;
+}
+
+#topNavbar>*{
+  overflow: hidden;
+  text-overflow:ellipsis;
+}
+
+#currentImgName{
+  overflow: hidden;
+  text-overflow:ellipsis;
+}
+/* mainWindow */
+#mainWindow{
+  height: calc(100vh - 50px);
+  /* margin-top:  */
+  display: flex;
+  
+}
+
+#mainWindow:after{
+  content:"";
+  display: block;
+  clear: both;
+}
+#sidebar{
+  width: 30%;
+  background-color: rgb(94, 94, 94);
+  display: flex;
+  align-items: stretch;
+}
+
+#toolbar{
+  width: 50px;
+  background-color: rgb(61, 61, 61);
+  min-width: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.unstyledList{
+  list-style-type: none;
+  padding: 0;margin: 0;
+
+}
+
+.flex-col{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#toolIcons{
+  height: 100%;
+
+}
+
+#toolIcons li{
+  height: 50px;
+  margin-bottom: 10px;
+  background-size: 60% 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  width: 100%;
+  font-size: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ccc;
+}
+
+#downloadBtn{
+  align-self: flex-end;/*doen't work*/
+  margin-top: auto;
+}
+
+#toolIcons li:hover{
+  background-color: rgb(32, 32, 32);
+}
+
+#cropIcon{
+/* background-image: url('../img/cropIcon.png') */
+}
+
+#rotateIcon{
+  /* background-image: url('../img/rotateIcon.png') */
+  }
+
+/* savedPreviews */
+
+#savedPreviews{
+  padding: 0 15px;
+  width: calc(100% - 50px);
+  overflow: auto;
+}
+
+.savedPreviews__img{
+  width: 100%;
+  margin:15px 0;
+}
+
+
+
+#mainArea{
+  width: 70%;
+  background-color: rgb(32, 32, 32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#imgWrapper{
+  /* height: 55%; */
+  margin-top: 50px;
+  min-height: 300px;
+  max-height: 400px;
+  width: 80%;
+  /* align-self: center; */
+  /* background-color: white; */
+  background-color: #000;
+  opacity: 0.5;
+  background-image: url('../img/checked_bg.png');
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* border-radius: 3px; */
+}
+
+#image{
+  max-width: 100%;
+  max-height: 100%;
+}
+
+
+#controlsWrapper{
+  /* background-color:  */
+  height: 40%;
+}
+
+#a4Page{
+  width: 595px;
+  height:842px;
+  background-color: white;
+}
