@@ -4,19 +4,26 @@
   "main": "server.js",
   "license": "MIT",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "cropperjs": "^1.3.4",
     "express": "^4.16.3",
-    "font-awesome": "^4.7.0"
+    "font-awesome": "^4.7.0",
+    "formidable": "^1.2.1",
+    "html-pdf": "^2.2.0",
+    "jspdf": "^1.3.5",
+    "morgan": "^1.9.0"
   },
   "scripts": {
     "start": "nodemon app.js",
-    "node_server": "nodemon server.js"
+    "node_server": "nodemon server.js",
+    "toPdf": "html-pdf public/convert.html convert.pdf"
   },
   "nodemonConfig": {
     "watch": [
       "app.js",
       "server.js"
     ],
-    "verbose": true
+    "verbose": false,
+    "delay": 1500
   }
 }

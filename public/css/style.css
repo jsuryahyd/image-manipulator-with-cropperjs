@@ -105,31 +105,43 @@ a{
 
 #toolIcons{
   height: 100%;
-
+justify-content: flex-start;
 }
 
 #toolIcons li{
-  height: 50px;
-  margin-bottom: 10px;
+  height: 60px;
   background-size: 60% 60%;
   background-repeat: no-repeat;
   background-position: center;
   cursor: pointer;
   width: 100%;
-  font-size: 35px;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #ccc;
 }
 
+#toolIcons .fa{
+  font-size: 30px;
+  
+}
+
 #downloadBtn{
-  align-self: flex-end;/*doen't work*/
-  margin-top: auto;
+  align-self: self-end;/*doen't work*/
+  /* margin-top: auto; */
+}
+
+#resetCrop{
+  margin-top: auto
 }
 
 #toolIcons li:hover{
   background-color: rgb(32, 32, 32);
+}
+
+#toolIcons li.disabled{
+  color: #222;
+  pointer-events: none;
 }
 
 #cropIcon{
@@ -140,6 +152,13 @@ a{
   /* background-image: url('../img/rotateIcon.png') */
   }
 
+  #savePdf{
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+  
+
 /* savedPreviews */
 
 #savedPreviews{
@@ -149,8 +168,15 @@ a{
 }
 
 .savedPreviews__img{
-  width: 100%;
+  max-width: 100%;
   margin:15px 0;
+  display: block;
+  cursor:pointer;
+  transition:filter 0.2s
+}
+
+.savedPreviews__img:hover{
+  filter: brightness(40%);
 }
 
 
@@ -162,19 +188,24 @@ a{
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;/* for a4Page */;
+  overflow: auto;
 }
 
 #imgWrapper{
   /* height: 55%; */
   margin-top: 50px;
-  min-height: 300px;
-  max-height: 400px;
+  height:50vh;
+  /* max-height: 400px; */
   width: 80%;
   /* align-self: center; */
   /* background-color: white; */
   background-color: #000;
   opacity: 0.5;
   background-image: url('../img/checked_bg.png');
+  background-size: auto;
+  background-repeat: repeat;
+  background-position: center;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -196,4 +227,27 @@ a{
   width: 595px;
   height:842px;
   background-color: white;
+  display: none;
+  position: absolute;
+  top: 50px
+}
+
+.imgInPdf{
+  position: absolute;
+  max-width: 60%;
+  top: 0;
+  left: 0;
+}
+
+#overlay{
+  position: fixed;;
+  display: none;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.8)
 }

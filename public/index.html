@@ -30,11 +30,11 @@
     <aside id="sidebar">
       <section id="toolbar">
         <ul id="toolIcons" class="unstyledList flex-col">
-          <li id="cropIcon" onclick="toggleCrop()" class="fa fa-crop"></li>
-          <li id="rotateIcon" class="fa fa-rotate-right"></li>
-          <li></li>
-          <li></li>
-          <li id="addImage"></li>
+          <li id="cropIcon" onclick="toggleCrop()" class="fa fa-crop cropper_controls"></li>
+          <li id="rotateIcon" class="fa fa-rotate-right cropper_controls"></li>
+          <li id="pdfWork" class="fa fa-file-pdf-o"></li>
+          <li id="resetCrop" class="fa fa-refresh cropper_controls" ></li>
+          <li id="saveToPdf" class="fa fa-cloud-download disabled" ></li>
           <li id="downloadBtn" class="fa fa-download">
             <a href="" id="downloadLink" hidden></a>
           </li>
@@ -48,18 +48,31 @@
       <div id="imgWrapper">
         <img src="" alt="" id="image">
       </div>
-      <div id="controlsWrapper"></div>
+      <div id="controlsWrapper">
+        <!-- <div id="zoomControls">
+          <button onclick="cropper.scale(0.1)"><i class="fa fa-search-plus"></i></button>
+          <button><i class="fa fa-search-minus"></i></button>
+          
+        </div> -->
+        
+      </div>
       <div id="a4Page">
         
       </div>
     </main>
   </main>
-
+<div id="overlay">
+  <img src="img/tenor.gif" alt="" style="width:60px">
+</div>
   <script src="/cropper/cropper.min.js"></script>
   <script src="/js/functions.js"></script>
+  <script src="/js/drag.js"></script>
+  <script src="jspdf/jspdf.min.js"></script>
   <script>
     let cropper;
-
+  let activePreview = null;//data-preview_id
+  let num_previews = 0;
+  let appState_cropping=true;
     document.addEventListener('DOMContentLoaded', () => {
       const image = document.getElementById('image');
       const imageWrapper = document.getElementById('imgWrapper');
@@ -69,11 +82,19 @@
       const filename = document.getElementById('currentImgName');
       const downloadLink = document.getElementById('downloadLink');
       const saveBtn = document.getElementById('saveBtn');
-      const savedPreviews = document.getElementById('savedPreviews')
+      const savedPreviews = document.getElementById('savedPreviews');
+      const cropReset = document.getElementById('resetCrop');
+      const pdfWork = document.getElementById('pdfWork');
+      const saveToPdf = document.getElementById('saveToPdf')
+      const a4Page = document.getElementById('a4Page');
       const myControls = controls(image);
       image.addEventListener('crop',()=>{
         cropper.getData();
-      })
+      });
+
+      image.addEventListener('zoom',function(){
+            console.log(cropper.getData().width,cropper.getData().height)
+          })
       imgDialog.onchange = (event) => {
         
         imageWrapper.style.backgroundColor = '';
@@ -86,12 +107,18 @@
             console.log('cancelled file input');
             return false
           }
-          cropper.replace();
+          cropper.replace(newSrc);
+          //clear saved previews
+          while(savedPreviews.hasChildNodes){
+            savedPreviews.removeChild(savedPreviews.lastChild);
+          }
           // cropper = null
         }else{
         cropper = new Cropper(image, {
-          scalable: false,
+          scalable: true,
           rotatable: true,
+          // zoomable:false,
+          dragMode:'move',//move image
           ready: function () {
             console.log('init and cropping')
             this.cropper.crop();
@@ -99,7 +126,8 @@
             image.addEventListener('crop',()=>{
             cropper.getData();
       }) 
-          }
+          },
+         
         });
       }
         filename.textContent = imgDialog.files[0].name;
@@ -121,7 +149,7 @@
         //   let download_url = cropper.getCroppedCanvas({
         //       maxHeight: 640,
         //       maxWidth: 360
-        //     }).toDataURL('image/jpeg');
+        //     }).toDataURL('image/png');
         //     //asynchronous function - cannot put after if-else block
         //     downloadLink.setAttribute('download', 'cropped-640x360.jpg')
         //     downloadLink.setAttribute('href', download_url);
@@ -129,12 +157,13 @@
 
 
         if (cropper && cropper.cropped) {
-          let download_url = cropper.getCroppedCanvas().toDataURL('image/jpeg');
+          let download_url = cropper.getCroppedCanvas().toDataURL('image/png');//alternatively getCropBoxData().width,height and set them to getCroppedCanvas({w:,h:});
+          let size = Math.ceil(cropper.getData().width)+'x'+Math.ceil(cropper.getData().height)
           //asynchronous function - cannot put after if-else block
-          downloadLink.setAttribute('download', 'cropped-640x360.jpg')
+          downloadLink.setAttribute('download', 'cropped-'+size+'.png')
           downloadLink.setAttribute('href', download_url);
         } else {
-          downloadLink.setAttribute('download', 'Uncropped.jpg')
+          downloadLink.setAttribute('download', 'Uncropped.png')
           downloadLink.setAttribute('href', image.getAttribute('src'));
         }
         //click event
@@ -149,12 +178,19 @@
           return false;
 
         }
-        cropper.rotate(45);
+        cropper.rotate(15);
       }
 
+      saveToPdf.onclick = sendHtml;
+
       saveBtn.onclick = ()=>{
+        if(!appState_cropping){
+          //TODO - savePdf
+          //...
+          return false;
+        }
         // appendImg()
-        let url = cropper.getCroppedCanvas().toDataURL('image/jpeg');
+        let url = cropper.getCroppedCanvas().toDataURL('image/png');
         let img = document.createElement('img');
         img.src = url;
         img.setAttribute('data-cropData', JSON.stringify(cropper.getData()))
@@ -162,8 +198,49 @@
         img.onclick = (event)=>{
           loadSavedPreview(event)
         }
+        num_previews += 1;
+        img.setAttribute('data-preview_id',num_previews)
         savedPreviews.appendChild(img)
+        savedPreviews.scrollTop = savedPreviews.offsetHeight;
       }
+
+      cropReset.onclick = ()=>{
+        if(cropper && cropper.cropped){
+          cropper.reset()
+        }
+      }
+
+      pdfWork.onclick = ()=>{
+        // let img = document.getElementsByClassName('imgInPdf')[0]
+        if(!cropper || !cropper.cropped || !num_previews){
+          return false;
+        }
+        appState_cropping = !appState_cropping
+        if(imageWrapper.style.zIndex == '-1'){
+          //show cropper area
+        imageWrapper.style.zIndex = '1';
+        a4Page.style.display = 'none';
+        
+        //re-enable cropper controls
+        Array.prototype.slice.call(document.getElementsByClassName('cropper_controls')).forEach(el=>{
+          el.classList.remove('disabled');
+        });
+        saveToPdf.classList.remove('disabled')          
+        }else{
+          saveToPdf.classList.remove('disabled')
+          //show pdf area
+          imageWrapper.style.zIndex = '-1';
+          a4Page.style.display = 'block';
+          //disable cropper controls
+          Array.prototype.slice.call(document.getElementsByClassName('cropper_controls')).forEach(el=>{
+          el.classList.add('disabled')
+        });
+          appendPreviewToA4();
+
+        }
+      }
+
+
 
     })
 
@@ -176,31 +253,10 @@
       let download_url, download_name;
       let downloadBtn = document.getElementById('downloadBtn')
       if (cropper && cropper.cropped) {
-        console.log('clearing')
-        // cropper.destroy();
-        // cropper = null;
+        // console.log('clearing')
         cropper.clear()
-        // downloadLink.setAttribute('download', 'Uncropped.jpg')
-        // downloadLink.setAttribute('href', image.getAttribute('src'));
       } else {
         console.log('cropping')
-        
-        // cropper = new Cropper(image, {
-        //   scalable: false,
-        //   rotatable: true,
-        //   ready: function () {
-        //     this.cropper.crop();
-        //     imageWrapper.style.opacity = 1;        
-        //     // download_url = this.cropper.getCroppedCanvas({
-        //     //   maxHeight: 640,
-        //     //   maxWidth: 360
-        //     // }).toDataURL('image/jpeg');
-        //     // console.log(download_url)
-        //     // //asynchronous function - cannot put after if-else block
-        //     // downloadLink.setAttribute('download', 'cropped-640x360.jpg')
-        //     // downloadLink.setAttribute('href', download_url);
-        //   }
-        // });
         cropper.crop();
       }
 
@@ -208,8 +264,81 @@
 
 
   function loadSavedPreview(e){
+    //set active preview img
     console.log(e.target);
-    console.log(JSON.parse(e.target.getAttribute('data-cropData')));
+    let data = JSON.parse(e.target.getAttribute('data-cropData'));
+    activePreview = e.target.getAttribute('data-preview_id')
+    cropper.setData(data);
+    appendPreviewToA4()
+    // pdfWork.click();
+  }
+
+  function saveToPdf(name,html){
+    let pdf = new jsPDF();
+    let a4Page = document.getElementById('a4Page');
+    let img= document.getElementsByClassName('imgInPdf')[0];
+    console.log(a4Page)
+    //rect
+    options = a4Page.getBoundingClientRect();
+
+    options.w = options.width;
+    options.h = options.height;
+    options.style = "F";
+    console.log(options)
+    //if no html,
+    // pdf.rect({options});
+    pdf.text('')
+    pdf.addImage(img.src, 'JPEG',img.offsetLeft,img.offsetTop,img.offsetWidth,img.offsetHeight)
+    console.log(img.src, 'JPEG',img.offsetLeft,img.offsetTop,img.offsetWidth,img.offsetHeight)
+    pdf.save((name || 'a4Pdf.pdf'))
+  }
+
+  function sendHtml(){
+    let overlay = document.getElementById('overlay')
+    overlay.style.display = 'flex';
+    let img = document.getElementsByClassName('imgInPdf')[0];
+    //styles
+    styles = getComputedStyle(img);
+    
+    
+    
+    let req = new XMLHttpRequest();
+    req.open('POST','/html2pdf');
+    req.setRequestHeader('content-type',"application/json");
+    req.onload = ()=>{
+      // // console.log(req.response,req.responseType)
+      // window.open('/downloadPdf')
+      let savePdf = document.createElement('a')
+      savePdf.setAttribute('href',"/downloadPdf");
+      savePdf.setAttribute('download','banner.pdf');
+      document.body.appendChild(savePdf)
+      savePdf.click();
+      document.body.removeChild(savePdf);
+    overlay.style.display = 'none';    
+      
+    }
+    req.send(JSON.stringify({
+      style:`html,body{height:100%;width:100%;margin:0;padding:0}#a4Page{display: block;
+    background-color: white;height:100%;width:100%;
+    position: relative} #img{position:absolute;width:${((parseInt(styles.width) / 595) * 100)}%;height:${(parseInt(styles.height) / 842 ) * 100}%;top:${(parseInt(styles.top) / 842 ) * 100}%;left:${((parseInt(styles.left) / 595) *100)}%}`,
+    html:`<div id="a4Page"> <img id="img" src="${img.src}" /></div>`
+    }));
+
+    console.log(`#img{position:absolute;width:${((parseInt(styles.width) / 595) * 100)}%;height:${(parseInt(styles.height) / 842 ) * 100}%;top:${(parseInt(styles.top) / 842 ) * 100}%;left:${((parseInt(styles.left) / 595) *100)}%}`)
+  }
+
+  function appendPreviewToA4(){
+    //add image to pdf preview
+    let img = document.createElement('img');
+        let active_preview = activePreview ? document.querySelector('[data-preview_id="'+activePreview+'"') : document.getElementsByClassName('savedPreviews__img')[0];
+        img.src = active_preview.src;
+        img.className = "imgInPdf";
+        img.style.maXwidth = '100%';
+        a4Page.innerHTML = '';
+        a4Page.appendChild(img);
+                        //dragging
+                        img.onmousedown = startDrag;
+          img.onmouseup = stopDrag;
   }
 
   </script>
