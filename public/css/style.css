@@ -26,10 +26,9 @@ button:focus{
 a,a:hover,a:focus,a:visited{
   text-decoration: none;
 }
-a{
-  /* user-select: none; */
-  /* text-decoration: none;   */
-}
+/* a{
+  user-select: none;
+} */
 
 
 
@@ -144,13 +143,6 @@ justify-content: flex-start;
   pointer-events: none;
 }
 
-#cropIcon{
-/* background-image: url('../img/cropIcon.png') */
-}
-
-#rotateIcon{
-  /* background-image: url('../img/rotateIcon.png') */
-  }
 
   #savePdf{
     display: block;
@@ -229,7 +221,8 @@ justify-content: flex-start;
   background-color: white;
   display: none;
   position: absolute;
-  top: 50px
+  top: 50px;
+  margin-bottom: 20px;
 }
 
 .imgInPdf{
