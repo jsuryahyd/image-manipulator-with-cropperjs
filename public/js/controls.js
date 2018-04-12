@@ -2,10 +2,12 @@ const controls = function(Cropper,dragFuncs) {
   let controls = Object.create(null) || {};
 
   let cropper;
-  let activePreview = null; //data-preview_id
   let num_previews = 0;
+  let activePreview = null;
   let appState_cropping = true;
   let draglib;
+  let converted_previews = [];
+  let imageFile
   // dom
   let image;
   let imageWrapper;
@@ -20,6 +22,8 @@ const controls = function(Cropper,dragFuncs) {
   let pdfWork;
   let saveToPdf;
   let a4Page;
+  let convertToPdf;
+  let overlay;
 
   //private functions
   function resetCropper() {
@@ -49,6 +53,7 @@ const controls = function(Cropper,dragFuncs) {
     };
     num_previews += 1;
     img.setAttribute("data-preview_id", num_previews);
+    activePreview = String(num_previews)
     savedPreviews.appendChild(img);
     savedPreviews.scrollTop = savedPreviews.offsetHeight;
   }
@@ -70,9 +75,9 @@ const controls = function(Cropper,dragFuncs) {
         .forEach(el => {
           el.classList.remove("disabled");
         });
-      saveToPdf.classList.remove("disabled");
+      convertToPdf.classList.add("disabled");
     } else {
-      saveToPdf.classList.remove("disabled");
+      convertToPdf.classList.remove("disabled");
       //show pdf area
       imageWrapper.style.zIndex = "-1";
       a4Page.style.display = "block";
@@ -85,14 +90,16 @@ const controls = function(Cropper,dragFuncs) {
       appendPreviewToA4();
     }
   }
-  /*
-      - create new cropper at first time
-      - subsequently, replaces the image (via setting new dataurl) for the cropper - cropper.replace(url)
-      */
-  function instantiateCropper(event) {
+    /*
+    - create new cropper at first time
+    - subsequently, replaces the image (via setting new dataurl) for the cropper - cropper.replace(url)
+    */
+  function instantiateCropper(imgSrc) {
+    if(!appState_cropping){
+      pdfToggle();
+    }
+    //imgDetails
     imageWrapper.style.backgroundColor = "";
-    let imgSrc = setImage(event);
-    if(!imgSrc) return;
     if (cropper) {
       //image is being changed
       newSrc = imgSrc;
@@ -124,13 +131,18 @@ const controls = function(Cropper,dragFuncs) {
           });
         }
       });
+      controls.cropper = cropper;
+      console.log(controls.cropper,cropper)
     }
-    filename.textContent = imgDialog.files[0].name;
-    download_url = image.getAttribute("src");
-    download_name = "uncropped-"+imgDialog.files[0].name;
-    downloadLink.setAttribute("download", download_name);
-    downloadLink.setAttribute("href", download_url);
+    // download_url = image.getAttribute("src");
+    // download_name = "uncropped-"+imgDialog.files[0].name;
+    // downloadLink.setAttribute("download", download_name);
+    // downloadLink.setAttribute("href", download_url);
   }
+
+  // Use the Google API Loader script to load the google.picker script.
+
+
 
   function rotateImg(degrees) {
     if (!cropper) {
@@ -141,7 +153,7 @@ const controls = function(Cropper,dragFuncs) {
   }
 
   /* starts : downloadBtn onclick*/
-  function downloadPdf() {
+  function downloadImage() {
     console.log("downloading");
     if (!image.getAttribute("src")) {
       event.preventDefault();
@@ -155,25 +167,41 @@ const controls = function(Cropper,dragFuncs) {
         cropper.getData().height
       )}`;
       //asynchronous function - cannot put after if-else block
-      downloadLink.setAttribute("download", "cropped-" + size + ".png");
-      downloadLink.setAttribute("href", download_url);
+      // downloadLink.setAttribute("download", "cropped-" + size + ".png");
+      // downloadLink.setAttribute("href", download_url);
+      setDownloadLink("cropped-" + size + ".png",download_url)
     } else {
-      downloadLink.setAttribute("download", "Uncropped.png");
-      downloadLink.setAttribute("href", image.getAttribute("src"));
+      // downloadLink.setAttribute("download", "Uncropped.png");
+      // downloadLink.setAttribute("href", image.getAttribute('src'));
+      setDownloadLink("Uncropped.png",image.getAttribute('src'))
+      
     }
+
+    overlayToggle('show');
+
     //click event
-    downloadLink.click(); //downloadLink.dispatchEvent('click')
+    // downloadLink.click(); //downloadLink.dispatchEvent('click')
   }
   /* ends : downloadBtn onclick*/
 
-  function setImage(e) {
-    let pic = e.target.files[0];
-    console.log(pic);
-    if (!pic) {
-      return false;
+  function setImage(pic,drive) {
+    if(drive) {
+      //pic is data.docs[0] from google drive picker callback
+      // setting imageFile variable (global controls variable)
+      imageFile = {srcUrl:pic.srcUrl,name:pic.name,mimType:pic.mimeType,id:pic.id,size:pic.sizeBytes}
+    }else{
+        // pic is File() object
+      imageFile = {
+        srcUrl:URL.createObjectURL(pic),
+        name:pic.name,
+        mimeType:pic.type,
+        id:null,
+        size:pic.size
+      }
+
     }
-    let srcUrl = URL.createObjectURL(pic);
-    return srcUrl;
+    
+    return instantiateCropper(imageFile.srcUrl);
   }
 
 
@@ -195,12 +223,11 @@ const controls = function(Cropper,dragFuncs) {
 
   }
 
-
 function loadSavedPreview(e){
   //set active preview img
   console.log(e.target);
   let data = JSON.parse(e.target.getAttribute('data-cropData'));
-  activePreview = e.target.getAttribute('data-preview_id')
+  activePreview = e.target.getAttribute('data-preview_id');
   cropper.setData(data);
   appendPreviewToA4()
   // pdfWork.click();
@@ -226,52 +253,97 @@ function loadSavedPreview(e){
 //   pdf.save((name || 'a4Pdf.pdf'))
 // }
 
+function overlayToggle(command){
+  commands = {'show':'flex','hide':'none'}
+  overlay.style.display = commands[command];
+}
+
+function setDownloadLink(filename,link){
+  if(!link) link = "/convertedPdf/"+filename;
+  overlay.classList.add('downloaded'); 
+  saveToPdf.setAttribute('href',link);
+  saveToPdf.setAttribute('download',filename);
+
+  renderSaveToDrive({
+    src:link,
+    filename:filename+'.pdf'
+  })
+}
+
 function sendHtml(){
-  let overlay = document.getElementById('overlay')
-  overlay.style.display = 'flex';
+  overlayToggle('show');
   let img = document.getElementsByClassName('imgInPdf')[0];
+  let parent = a4Page;
+  console.log('a4Page',a4Page)
+  let imgName = imageFile.name;
   //styles
-  styles = getComputedStyle(img);
+  let styles = getComputedStyle(img);
+  let parentDimensions = getComputedStyle(a4Page)
+  let preview_num = img.getAttribute('data-preview_item');
+  let title = preview_num + '-' +imgName
+  console.log(converted_previews,preview_num)
+  //if already converted, set download link and get out
+  if(converted_previews.indexOf(preview_num) !== -1){
+    return setDownloadLink(title);
+  }
+  overlay.classList.remove('downloaded');//show gif and hide buttons
+  //if not continue
   let req = new XMLHttpRequest();
   req.open('POST','/html2pdf');
   req.setRequestHeader('content-type',"application/json");
   req.onload = ()=>{
-  let savePdf = document.createElement('a')
-  savePdf.setAttribute('href',"/downloadPdf");
-  savePdf.setAttribute('download','banner.pdf');
-  document.body.appendChild(savePdf)
-  savePdf.click();
-  document.body.removeChild(savePdf);
-  overlay.style.display = 'none';    
-    
+    console.log('downloaded')
+    setDownloadLink(title);
+    //now converted, dont send this image for conversion anymore.
+    converted_previews.push(preview_num);
   }
-  req.send(JSON.stringify({
+  
+  // // % values 
+  // let imgWidth = (parseInt(styles.width) / parseInt(parentDimensions.width)) * 100
+  // let imgHeight = (parseInt(styles.height) / parseInt(parentDimensions.height) ) * 100;
+  // let imgTop = (parseInt(styles.top) / parseInt(parentDimensions.height) * 100);
+  // let imgLeft = ((parseInt(styles.left) / parseInt(parentDimensions.width)) *100)
+  //img
+  let imgWidth = img.offsetWidth / parent.offsetWidth * 100;
+  let imgHeight = img.offsetHeight / (parent.offsetWidth * 1.41) * 100;//parent.offsetHeight
+  let imgTop = img.offsetTop / parent.offsetHeight * 100;
+  let imgLeft = img.offsetLeft / parent.offsetWidth * 100;
+
+  /*
+  - alternatively set width and height of parent in px(in css) to make it exact looking
+  */
+
+  //construct fields to send
+  htmlObj = {
     style:`html,body{height:100%;width:100%;margin:0;padding:0}#a4Page{display: block;
   background-color: white;height:100%;width:100%;
-  position: relative} #img{position:absolute;width:${((parseInt(styles.width) / 595) * 100)}%;height:${(parseInt(styles.height) / 842 ) * 100}%;top:${(parseInt(styles.top) / 842 ) * 100}%;left:${((parseInt(styles.left) / 595) *100)}%}`,
-  html:`<div id="a4Page"> <img id="img" src="${img.src}" /></div>`
-  }));
+  position: relative} #img{position:absolute;width:${imgWidth}%;height:${imgHeight}%;top:${imgTop}%;left:${imgLeft}%}`,
+  html:`<div id="a4Page"> <img id="img" src="${img.src}" /></div>`,
+  title:title
+  }
 
-  console.log(`#img{position:absolute;width:${((parseInt(styles.width) / 595) * 100)}%;height:${(parseInt(styles.height) / 842 ) * 100}%;top:${(parseInt(styles.top) / 842 ) * 100}%;left:${((parseInt(styles.left) / 595) *100)}%}`)
+  req.send(JSON.stringify(htmlObj));
 }
 
 function appendPreviewToA4(){
   //add image to pdf preview
   let img = document.createElement('img');
-      let active_preview = activePreview ? document.querySelector('[data-preview_id="'+activePreview+'"') : document.getElementsByClassName('savedPreviews__img')[0];
-      img.src = active_preview.src;
-      img.className = "imgInPdf";
-      img.style.maXwidth = '100%';
-      a4Page.innerHTML = '';
-      a4Page.appendChild(img);
-      //dragging
-      img.onmousedown = draglib.startDrag;
-      img.onmouseup = draglib.stopDrag;
+  //activePreview is data-preview_id  of currently active image
+  let active_preview = activePreview ? document.querySelector('[data-preview_id="'+activePreview+'"') : document.getElementsByClassName('savedPreviews__img')[0];
+  img.src = active_preview.src;
+  img.className = "imgInPdf";
+  img.style.maXwidth = '100%';
+  img.setAttribute('data-preview_item',activePreview)
+  a4Page.innerHTML = '';
+  a4Page.appendChild(img);
+  //dragging
+  img.onmousedown = draglib.startDrag;
+  img.onmouseup = draglib.stopDrag;
 }
 
   //public functions
 
-  controls.domCache = function() {
+  function domCache() {
     image = document.getElementById("image");
     imageWrapper = document.getElementById("imgWrapper");
     imgDialog = document.getElementById("imgDialog");
@@ -285,35 +357,58 @@ function appendPreviewToA4(){
     pdfWork = document.getElementById("pdfWork");
     saveToPdf = document.getElementById("saveToPdf");
     a4Page = document.getElementById("a4Page");
-    cropIcon = document.getElementById('cropIcon')
+    cropIcon = document.getElementById('cropIcon');
+    convertToPdf = document.getElementById('convertToPdf');
+    overlay = document.getElementById('overlay')
+    
   };
 
-  controls.init = function() {
-    controls.domCache();
-    draglib = dragFuncs(a4Page)
-    image.addEventListener("crop", () => {
-      // console.table(cropper.getData())
-    });
+  function renderSaveToDrive({src,filename}) {
+    config = {
+      src: 'http://localhost:5678'+src,
+      filename: filename,
+    }
+    config.sitename = 'my sitename';
+    console.log(config)
+    gapi.savetodrive.render('saveToDrive', config);
+  }
 
-    image.addEventListener("zoom", function() {
-      console.log(cropper.getData().width, cropper.getData().height);
-    });
+      
+
+  controls.init = function() {
+    domCache();
+    draglib = dragFuncs(a4Page)
+    // image.addEventListener("crop", () => {
+    //   console.table(cropper.getData())
+    // });
+
+    // image.addEventListener("zoom", function() {
+    //   console.log(cropper.getData().width, cropper.getData().height);
+    // });
     
     cropIcon.onclick = (event)=>{
       toggleCrop();
     };
+    // imgDialog.onclick = checkAppState;
 
-    imgDialog.onchange = instantiateCropper;
+    imgDialog.onchange = (event)=>{
+      if(!event.target.files[0]){
+        //do nothing if file dialog was cancelled by user
+        return false;
+      }
+      //passing file as parameter
+      setImage(event.target.files[0])  
+    };
 
     downloadBtn.onclick = (event)=>{
-      downloadPdf()
+      downloadImage()
     };
 
     rotateIcon.onclick = (event)=>{
       rotateImg()
     };
 
-    saveToPdf.onclick = (event)=>{
+    convertToPdf.onclick = (event)=>{
       sendHtml(); 
     };
 
@@ -328,8 +423,15 @@ function appendPreviewToA4(){
     pdfWork.onclick = (event)=>{
       pdfToggle()
     };
-  };
 
+
+
+    // controls.cropper = cropper
+
+  };
+  //init here as this doesnot require dependencies
+  // controls.init();
+controls.setImage = setImage;
   return controls;
 };
 

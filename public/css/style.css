@@ -1,4 +1,9 @@
-
+:root{
+  --white: #ecf0f1;
+  --green:#27ae60;
+  --red:#d63031;
+  --aspect-ratio-a4:calc(3508 / 2480 * 100%);
+}
 
 nav#topNavbar{
   background-color: #333;
@@ -30,8 +35,6 @@ a,a:hover,a:focus,a:visited{
   user-select: none;
 } */
 
-
-
 #topNavbar>*{
   display: flex;
   width:30%;
@@ -45,9 +48,16 @@ a,a:hover,a:focus,a:visited{
   align-items: stretch
 }
 #rightButtons #uploadBtn{
-  background-color: green;
-  border-color: green;
+  
+  background-color: var(--green);
+  border-color: var(--green);
   cursor: pointer;
+}
+
+#drivePicker{
+
+  background-color: var(--red);
+  border-color:var(--red);
 }
 
 #topNavbar>*{
@@ -161,17 +171,18 @@ justify-content: flex-start;
 
 .savedPreviews__img{
   max-width: 100%;
-  margin:15px 0;
+  margin:15px auto;
   display: block;
   cursor:pointer;
-  transition:filter 0.2s
+  transition:filter 0.2s;
+  background-image: url('../img/checked_bg.png');
+  max-height: 30vh;
+  
 }
 
 .savedPreviews__img:hover{
   filter: brightness(40%);
 }
-
-
 
 #mainArea{
   width: 70%;
@@ -213,16 +224,28 @@ justify-content: flex-start;
 #controlsWrapper{
   /* background-color:  */
   height: 40%;
+  text-align: right;
+    width: 80%;
+    padding: 6vh 0;
+    box-sizing: border-box;
+}
+
+#saveBtn{
+  margin: 0;
+  color:var(--white)
 }
 
 #a4Page{
-  width: 595px;
-  height:842px;
+  width:80%;
+  height: 0;
+  padding-bottom: var(--aspect-ratio-a4);
+  /* width: 595px;
+  height:842px; */
   background-color: white;
   display: none;
   position: absolute;
-  top: 50px;
-  margin-bottom: 20px;
+  top: 15px;
+  margin-bottom: 15px;
 }
 
 .imgInPdf{
@@ -243,4 +266,29 @@ justify-content: flex-start;
   justify-content: center;
   align-items: center;
   background: rgba(0,0,0,0.8)
+}
+
+#downloadIcons{
+  width: 250px;
+  justify-content: space-between;
+  height: 50px;
+  align-items: center;
+  display: none;
+  position: relative
+}
+#saveToPdf{
+  color: #ccc;
+  font-size: 35px;
+}
+
+#overlay #downloadingGif{
+  display: block;
+}
+
+#overlay.downloaded #downloadIcons{
+  display: flex;
+}
+
+#overlay.downloaded #downloadingGif{
+  display: none;
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,18 +11,26 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="cropper/cropper.min.css">
   <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css">
+  <script>
+    window.___gcfg = {
+      parsetags: 'explicit'
+    };
+  </script>
 </head>
+
 <body>
   <nav id="topNavbar" class="row">
     <h2 id="logo">ImageCropper</h2>
-    <div > <span id="currentImgName"></span></div>
+    <div>
+      <span id="currentImgName"></span>
+    </div>
     <div id="rightButtons">
       <!-- <button id="upload" onclick="uploadImg()">Upload</button>
          -->
-      <label for="imgDialog" id="uploadBtn">Upload
+      <label for="imgDialog" id="uploadBtn">Choose a File
         <input type="file" name="imgDialog" id="imgDialog" hidden>
       </label>
-      <button id="saveBtn">Save</button>
+      <button id="drivePicker">Google Drive</button>
     </div>
   </nav>
   <main class="container" id="mainWindow">
@@ -31,40 +40,182 @@
           <li id="cropIcon" class="fa fa-crop cropper_controls"></li>
           <li id="rotateIcon" class="fa fa-rotate-right cropper_controls"></li>
           <li id="pdfWork" class="fa fa-file-pdf-o"></li>
-          <li id="resetCrop" class="fa fa-refresh cropper_controls" ></li>
-          <li id="saveToPdf" class="fa fa-cloud-download disabled" ></li>
+          <li id="resetCrop" class="fa fa-refresh cropper_controls"></li>
+          <li id="convertToPdf" class="fa fa-cloud-download disabled"></li>
           <li id="downloadBtn" class="fa fa-download">
             <a href="" id="downloadLink" hidden></a>
           </li>
         </ul>
       </section>
-      <section id="savedPreviews" >
-        
+      <section id="savedPreviews">
+        <img src="" alt="" id="myImage">
       </section>
     </aside>
     <main id="mainArea">
       <div id="imgWrapper">
         <img src="" alt="" id="image">
       </div>
-      <div id="controlsWrapper">        
+      <div id="controlsWrapper">
+      <button id="saveBtn">Save</button>
+        
       </div>
       <div id="a4Page"></div>
     </main>
   </main>
-<div id="overlay">
-  <img src="img/tenor.gif" alt="" style="width:60px">
-</div>
+  <div id="overlay" onclick="this.style.display='none'">
+    <div id="downloadIcons">
+      <a id="saveToPdf" class="fa fa-download"></a>
+      <!-- <button id="saveToDrive" style="font-size:12px"><img src="img/gdrive.png"  width="24"/> Save to Google Drive</button> -->
+
+      <div id="saveToDrive">
+        <img src="img/spinner.gif" alt="Loading drive button..." width="50%;">
+      </div>
+
+      <p style="color:white;position: absolute;right:0;bottom:-15px;margin:0">
+        Save to Google Drive
+      </p>
+
+    </div>
+    <img src="img/tenor.gif" alt="" style="width:60px" id="downloadingGif">
+  </div>
   <script src="/cropper/cropper.min.js"></script>
   <script src="/js/drag.js"></script>
   <!-- <script src="jspdf/jspdf.min.js"></script> -->
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
   <script src="/js/controls.js"></script>
   <script>
-    window.onload = ()=>{
-      myApp = controls(Cropper,dragFuncs);
+    //for debugging
+    let app;
+    window.onload = () => {
+      myApp = controls(Cropper, dragFuncs);
       myApp.init();
+      //for debugging
+      app = myApp;
+      // console.log(savedPreviews);
+    drivePicker.onclick =(event)=>{
+      loadPicker()
+    }
+
+    // The Browser API key obtained from the Google API Console.
+    // Replace with your own Browser API key, or your own key.
+    var developerKey = 'AIzaSyCqpfIRLS29AwUD6XZwODTNKmmjVnsbroA';
+
+// The Client ID obtained from the Google API Console. Replace with your own Client ID.
+var clientId = "394899349308-irmt7p8hgh99llrh9afk64j5phvfkpt5.apps.googleusercontent.com"
+
+// Replace with your own project number from console.developers.google.com.
+// See "Project number" under "IAM & Admin" > "Settings"
+var appId = "394899349308";
+
+// Scope to use to access user's Drive items.
+var scope = ['https://www.googleapis.com/auth/drive'];
+
+var pickerApiLoaded = false;
+var oauthToken;
+
+
+function onAuthApiLoad() {
+  window.gapi.auth.authorize(
+    {
+      'client_id': clientId,
+      'scope': scope,
+      'immediate': false
+    },
+    handleAuthResult);
+}
+
+  function loadPicker() {
+    gapi.load('auth', {'callback': onAuthApiLoad});
+    gapi.load('picker', {'callback': onPickerApiLoad});
+
+  }
+
+function onPickerApiLoad() {
+  pickerApiLoaded = true;
+  createPicker();
+}
+
+function handleAuthResult(authResult) {
+  if (authResult && !authResult.error) {
+    oauthToken = authResult.access_token;
+    createPicker();
+  }
+}
+
+// // Create and render a Picker object for searching images.
+// function createPicker() {
+//   if (pickerApiLoaded && oauthToken) {
+//     var view = new google.picker.View(google.picker.ViewId.DOCS);
+//     // view.setMimeTypes("image/png,image/jpeg,image/jpg");
+//     var picker = new google.picker.PickerBuilder()
+//         .enableFeature(google.picker.Feature.NAV_HIDDEN)
+//         .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+//         .setAppId(appId)
+//         .setOAuthToken(oauthToken)
+//         .addView(view)
+//         .addView(new google.picker.DocsUploadView())
+//         .setDeveloperKey(developerKey)
+//         .setCallback(pickerCallback)
+//         .build();
+//      picker.setVisible(true);
+//   }
+// }
+
+function createPicker() {
+  if (pickerApiLoaded && oauthToken) {
+    var picker = new google.picker.PickerBuilder().
+      addView(google.picker.ViewId.DOCS).
+      addView(new google.picker.DocsUploadView().setIncludeFolders(true)).
+      setOAuthToken(oauthToken).
+      setDeveloperKey(developerKey).
+      setCallback(pickerCallback).
+      build();
+    picker.setVisible(true);
+  }
+}
+
+// A simple callback implementation.
+pickerCallback = function (data) {
+        console.log(data)
+        if (data.action == google.picker.Action.PICKED) {
+          let file = data.docs[0]
+          // console.log(data.docs)
+          let xhr = new XMLHttpRequest();
+          xhr.open('get', 'https://www.googleapis.com/drive/v3/files/' + file.id + '?alt=media');
+          xhr.setRequestHeader('Authorization', 'Bearer ' + oauthToken);
+          xhr.responseType = 'blob'
+          xhr.onload = () => {
+            console.log(xhr.response);
+            // document.getElementById('image').src = URL.createObjectURL(xhr.response)
+            // cropper = new Cropper(image, {
+            //   scalable: true,
+            //   rotatable: true,
+            //   // zoomable:false,
+            //   dragMode: "move", //move image
+            //   ready: function() {
+            //     console.log("init and cropping");
+            //     this.cropper.crop();
+            //     imageWrapper.style.opacity = 1;
+            //     image.addEventListener("crop", () => {
+            //       cropper.getData();
+            //     });
+            //   }
+            // });
+            file.srcUrl = URL.createObjectURL(xhr.response)
+            myApp.setImage(file,true)
+          }
+          xhr.send()
+  
+        }
+      }
+
     }
   </script>
+  <script type="text/javascript">
 
 
+  </script>
+  <script type="text/javascript" src="https://apis.google.com/js/api.js"></script>
 </body>
+
 </html>
