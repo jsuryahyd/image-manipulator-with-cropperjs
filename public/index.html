@@ -183,7 +183,8 @@ pickerCallback = function (data) {
           let xhr = new XMLHttpRequest();
           xhr.open('get', 'https://www.googleapis.com/drive/v3/files/' + file.id + '?alt=media');
           xhr.setRequestHeader('Authorization', 'Bearer ' + oauthToken);
-          xhr.responseType = 'blob'
+          xhr.responseType = 'blob';
+          //alternatively, set this to 'arrayBuffer' and later URL.createObjectURL(new Blob(xhr.response,{type:'image/png'})) // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
           xhr.onload = () => {
             console.log(xhr.response);
             // document.getElementById('image').src = URL.createObjectURL(xhr.response)
@@ -212,8 +213,6 @@ pickerCallback = function (data) {
     }
   </script>
   <script type="text/javascript">
-
-
   </script>
   <script type="text/javascript" src="https://apis.google.com/js/api.js"></script>
 </body>
